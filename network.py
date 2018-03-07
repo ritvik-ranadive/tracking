@@ -19,7 +19,7 @@ def conv2d(x, W):
 
 def max_pool_2x2(x):
     # stride [1, x_movement, y_movement, 1]
-    return tf.nn.max_pool(x, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
+    return tf.nn.max_pool(x, ksize=[1,2,2,1], strides=[1,2,2,1], padding='VALID')
 
 def cnn_layers(features):
     # define placeholder for inputs to network
@@ -43,10 +43,10 @@ def cnn_layers(features):
     h_pool2 = max_pool_2x2(h_conv2)  # output size 12x12x7
 
     ## fc1 layer ##
-    W_fc1 = weight_variable([13 * 13 * 7, 256])
+    W_fc1 = weight_variable([12 * 12 * 7, 256])
     b_fc1 = bias_variable([256])
 
-    h_pool2_flat = tf.reshape(h_pool2, [-1, 13 * 13 * 7])
+    h_pool2_flat = tf.reshape(h_pool2, [-1, 12 * 12 * 7])
     h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
     h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
