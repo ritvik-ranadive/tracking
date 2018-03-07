@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 from data_utils import generateMinibatch
 import tensorflow as tf
+from network import cnn_layers
 
 script_dir = os.path.dirname(__file__)
 trainSet = open(os.path.join(script_dir,"train.txt"), 'r').read().split("\n")
@@ -39,7 +40,7 @@ cv2.imwrite("meanImage.png", meanImage)
 meanImage = np.array(meanImage).astype('float32') / 255
 
 # Call to generate minibatch
-batchSize = 10
+batchSize = 2
 input_triplets = generateMinibatch(trainSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck, batchSize)
 # print('The input shape is : {}'.format(np.shape(input_triplets)))
 # for input in input_triplets:
@@ -57,6 +58,21 @@ inputs_train = np.asarray(inputs_train)
 inputs_train = tf.Variable(inputs_train, tf.float32)
 print(np.shape(inputs_train))
 
+sess = tf.Session()
+# important step
+# tf.initialize_all_variables() no long valid from
+# 2017-03-02 if using tensorflow >= 0.12
+if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
+    init = tf.initialize_all_variables()
+else:
+    init = tf.global_variables_initializer()
+sess.run(cnn_layers(inputs_train))
+
+# for i in range(100):
+#     sess.run(train_step, feed_dict={xs: batch_xs, ys: batch_ys, keep_prob: 0.5})
+#     if i % 50 == 0:
+#         print(compute_accuracy(
+# mnist.test.images[:1000], mnist.test.labels[:1000]))
 
 
 
