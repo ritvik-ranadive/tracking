@@ -5,7 +5,8 @@ from random import randint
 def generateMinibatch(trainSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck, batchSize=100):
 
     inputImagePaths = [] # The set to store the anchor, puller, pusher paths
-    indices = [randint(0, len(trainSet)) for p in range(batchSize)]
+    indices = [randint(0, batchSize) for p in range(batchSize)]
+    # print('Indices: {}'.format(indices))
     anchors = [trainSet[i] for i in indices]
     anchors = [[data[0], float(data[1]), float(data[2]), float(data[3]), float(data[4])] for data in anchors]
     # print(np.shape(anchors))
@@ -31,15 +32,17 @@ def generateMinibatch(trainSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, db
         puller_final = []
         for puller in puller_set:
             puller_quaternions = [float(puller[1]), float(puller[2]), float(puller[3]), float(puller[4])]
-            theta_new = 2 * np.arccos(np.absolute(np.dot(anchor_quaternions, puller_quaternions)))
-            # print(theta_new)
-            if theta_new < theta:
-                theta = theta_new
-                puller_final = puller
+            if np.absolute(np.dot(anchor_quaternions, puller_quaternions)) >= -1 and np.absolute(np.dot(anchor_quaternions, puller_quaternions)) <= 1:
+                theta_new = 2 * np.arccos(np.absolute(np.dot(anchor_quaternions, puller_quaternions)))
+                # print(theta_new)
+                if theta_new < theta:
+                    theta = theta_new
+                    puller_final = puller
         puller_final = [puller_final[0], float(puller_final[1]), float(puller_final[2]), float(puller_final[3]), float(puller_final[4])]
 
         # Choose a random pusher
-        pusher_index = randint(0,np.shape(dbSet)[0])
+        pusher_index = randint(0,np.shape(dbSet)[0]-1)
+        # print('Pusher_index: {}'.format(pusher_index))
         pusher = dbSet[pusher_index]
         pusher = [pusher[0], float(pusher[1]), float(pusher[2]), float(pusher[3]), float(pusher[4])]
 
