@@ -88,7 +88,7 @@ def cnn_model_fn(features, mode):
     # Triplet images are 64x64 pixels, and have 3 color channel and 3 such images are to be processed together
     input_layer = tf.reshape(features["x"], [-1, 64, 64, 3])
     # input_layer = tf.Print(input_layer, [input_layer], "input_layer")
-    # print('Input Layer: {}'.format(np.shape(input_layer)))
+    print('Input Layer: {}'.format(np.shape(input_layer)))
 
     # Convolutional Layer #1
     # Computes 16 features using a 8x8 filter with ReLU activation.
@@ -168,6 +168,18 @@ def cnn_model_fn(features, mode):
     # print(output)
     # print('Output: {}'.format(np.shape(output)))
 
+    # Return the outputs when using the model after training
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        predictions = {
+            'features': output,
+        }
+        print("Output Shape in PREDICT Mode: {}".format(np.shape(output)))
+        return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
+    # if mode == tf.estimator.ModeKeys.EVAL:
+    #     print("Output Shape in EVAL Mode: {}".format(np.shape(output)))
+    #     return tf.estimator.EstimatorSpec(mode=mode, predictions=outputs)
+
     # Loss Calculation
     loss = calculate_loss(output)
 
@@ -224,7 +236,7 @@ def main(unused_argv):
     meanImage = np.array(meanImage).astype('float32') / 255
 
     # Call to generate minibatch
-    batchSize = 7409
+    batchSize = 30
     input_triplets = generateMinibatch(trainSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck, batchSize)
     # print('The input shape is : {}'.format(np.shape(input_triplets)))
     # for input in input_triplets:
@@ -261,28 +273,73 @@ def main(unused_argv):
     estimator = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir=model_dir)
 
     # Train the model
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_train}, batch_size=30, num_epochs=None, shuffle=False)
-    estimator.train(input_fn=train_input_fn, steps=1000)
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_train}, batch_size=90, num_epochs=None, shuffle=False)
+    estimator.train(input_fn=train_input_fn, steps=100)
     print('Reached Here')
 
-    # model = tf.estimator.Estimator(model_fn)
-    #
-    # sess = tf.Session()
-    # # important step
-    # # tf.initialize_all_variables() no long valid from
-    # # 2017-03-02 if using tensorflow >= 0.12
-    # if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
-    #     init = tf.initialize_all_variables()
-    # else:
-    #     init = tf.global_variables_initializer()
-    # # sess.run(cnn_layers(inputs_train))
-    #
-    # for i in range(100):
-    #     sess.run(train_step, feed_dict={xs: batch_xs, ys: batch_ys, keep_prob: 0.5})
-    # #     if i % 50 == 0:
-    # #         print(compute_accuracy(
-    # # mnist.test.images[:1000], mnist.test.labels[:1000]))
+    ############################################################
+    ####################TRAINING ENDS###########################
+    ####################START TESTING###########################
+    ############################################################
 
+    # We will have triplets here of anchor puller pusher all coming from the dbSet
+    # These are being used to get the features for the dbSet
+    batchSize_dbSet = 30
+    dbSet_triplets = generateMinibatch(dbSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck,
+                                       batchSize_dbSet)
+    dbSet_images = []
+    for input in dbSet_triplets:
+        anchorImage = np.array(cv2.imread(os.path.join(script_dir,input[0][0]))).astype('float32') / 255
+        pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[1][0]))).astype('float32') / 255
+        pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
+        dbSet_images += anchorImage-meanImage, pullerImage-meanImage, pusherImage-meanImage
+    dbSet_images = np.asarray(dbSet_images)
+    for input in dbSet_images:
+        check = np.isnan(input)
+        # print(np.shape(check))
+        if check.any():
+            print('Found NaN')
+    print('DB Set Shape: {}'.format(np.shape(dbSet_images)))
+
+    # We will have triplets here of anchor coming from testSet and puller pusher coming from the dbSet
+    # These are being used to get the features for the testSet
+    batchSize_testSet = 30
+    testSet_triplets = generateMinibatch(testSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck,
+                                       batchSize_testSet)
+    testSet_images = []
+    for input in testSet_triplets:
+        anchorImage = np.array(cv2.imread(os.path.join(script_dir,input[0][0]))).astype('float32') / 255
+        pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[1][0]))).astype('float32') / 255
+        pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
+        testSet_images += anchorImage-meanImage, pullerImage-meanImage, pusherImage-meanImage
+    testSet_images = np.asarray(testSet_images)
+    for input in testSet_images:
+        check = np.isnan(input)
+        # print(np.shape(check))
+        if check.any():
+            print('Found NaN')
+    print('Test Set Shape: {}'.format(np.shape(testSet_images)))
+
+    print("Reached here 2")
+
+    # Get the features for dbSet in dbSet_features
+    dbSet_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": dbSet_images}, num_epochs=1, shuffle=False)
+    dbSet_results = estimator.predict(input_fn=dbSet_input_fn)
+    dbSet_features = []
+    for dbSet_result in dbSet_results:
+        # print(test_result['features'])
+        dbSet_features += [dbSet_result['features']]
+
+    # Get the features for the testSet in testSet_features
+    testSet_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": testSet_images}, num_epochs=1, shuffle=False)
+    testSet_results = estimator.predict(input_fn=testSet_input_fn)
+    testSet_features = []
+    for testSet_result in testSet_results:
+        # print(test_result['features'])
+        testSet_features += [testSet_result['features']]
+
+    print('dbSet feature size: {}'.format(np.shape(dbSet_features)))
+    print('testSet feature size: {}'.format(np.shape(testSet_features)))
 
 if __name__ == "__main__":
     tf.app.run()
