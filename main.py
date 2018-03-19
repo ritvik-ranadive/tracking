@@ -75,7 +75,7 @@ def calculate_loss(output):
         i = i + 3
 
     loss = tf.add(l_triplets, l_pairs)
-    # loss = tf.Print(loss, [loss], "loss")
+    loss = tf.Print(loss, [loss], "loss")
     # print('loss: {}'.format(np.shape(loss)))
     return loss
 
@@ -298,7 +298,7 @@ def main(unused_argv):
         pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
         pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[3][0]))).astype('float32') / 255
         dbSet_images += anchorImage-meanImage, pullerImage-meanImage, pusherImage-meanImage
-        print(input)
+        # print(input)
     dbSet_images = np.asarray(dbSet_images)
     for input in dbSet_images:
         check = np.isnan(input)
@@ -319,7 +319,7 @@ def main(unused_argv):
         pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
         pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[3][0]))).astype('float32') / 255
         testSet_images += anchorImage-meanImage, pullerImage-meanImage, pusherImage-meanImage
-        print(input)
+        # print(input)
     testSet_images = np.asarray(testSet_images)
     for input in testSet_images:
         check = np.isnan(input)
@@ -335,7 +335,7 @@ def main(unused_argv):
     dbSet_results = estimator.predict(input_fn=dbSet_input_fn)
     dbSet_features = []
     for dbSet_result in dbSet_results:
-        print(dbSet_result['features'])
+        # print(dbSet_result['features'])
         dbSet_features += [dbSet_result['features']]
 
     # Get the features for the testSet in testSet_features
@@ -343,7 +343,7 @@ def main(unused_argv):
     testSet_results = estimator.predict(input_fn=testSet_input_fn)
     testSet_features = []
     for testSet_result in testSet_results:
-        print(testSet_result['features'])
+        # print(testSet_result['features'])
         testSet_features += [testSet_result['features']]
 
     print('dbSet feature size: {}'.format(np.shape(dbSet_features)))
