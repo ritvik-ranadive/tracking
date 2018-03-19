@@ -75,7 +75,7 @@ def calculate_loss(output):
         i = i + 3
 
     loss = tf.add(l_triplets, l_pairs)
-    loss = tf.Print(loss, [loss], "loss")
+    # loss = tf.Print(loss, [loss], "loss")
     # print('loss: {}'.format(np.shape(loss)))
     return loss
 
@@ -236,8 +236,9 @@ def main(unused_argv):
     meanImage = np.array(meanImage).astype('float32') / 255
 
     # Call to generate minibatch
-    batchSize = 30
-    input_triplets = generateMinibatch(trainSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck, batchSize)
+    batchSize = 100
+    batchtype = "train"
+    input_triplets = generateMinibatch(trainSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck, batchSize, batchtype)
     # print('The input shape is : {}'.format(np.shape(input_triplets)))
     # for input in input_triplets:
     #     print(input)
@@ -245,17 +246,20 @@ def main(unused_argv):
     # Read the images from the paths, normalize and zero center the pixel values
     # inputs_train = np.zeros((batchSize,64,64,9))
     inputs_train = []
+    i = 0
     for input in input_triplets:
+        # print(input)
         # input_attach = np.zeros((64, 64, 9))
         # print('Input_Attach: {}'.format(np.shape(input_attach)))
-        anchorImage = np.array(cv2.imread(os.path.join(script_dir,input[0][0]))).astype('float32') / 255
-        pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[1][0]))).astype('float32') / 255
-        pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
+        anchorImage = np.array(cv2.imread(os.path.join(script_dir,input[1][0]))).astype('float32') / 255
+        pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
+        pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[3][0]))).astype('float32') / 255
         inputs_train += anchorImage-meanImage, pullerImage-meanImage, pusherImage-meanImage
         # input_attach[:, :, 0:3] = anchorImage - meanImage
         # input_attach[:, :, 3:6] = pullerImage - meanImage
         # input_attach[:, :, 6:9] = pusherImage - meanImage
         # inputs_train += input_attach
+    # exit(0)
 
     inputs_train = np.asarray(inputs_train)
     # print(inputs_train)
@@ -273,7 +277,7 @@ def main(unused_argv):
     estimator = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir=model_dir)
 
     # Train the model
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_train}, batch_size=90, num_epochs=None, shuffle=False)
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_train}, batch_size=30, num_epochs=None, shuffle=True)
     estimator.train(input_fn=train_input_fn, steps=100)
     print('Reached Here')
 
@@ -284,15 +288,17 @@ def main(unused_argv):
 
     # We will have triplets here of anchor puller pusher all coming from the dbSet
     # These are being used to get the features for the dbSet
-    batchSize_dbSet = 30
+    batchSize_dbSet = 3
+    batchtype = "dbset"
     dbSet_triplets = generateMinibatch(dbSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck,
-                                       batchSize_dbSet)
+                                       batchSize_dbSet, batchtype)
     dbSet_images = []
     for input in dbSet_triplets:
-        anchorImage = np.array(cv2.imread(os.path.join(script_dir,input[0][0]))).astype('float32') / 255
-        pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[1][0]))).astype('float32') / 255
-        pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
+        anchorImage = np.array(cv2.imread(os.path.join(script_dir,input[1][0]))).astype('float32') / 255
+        pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
+        pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[3][0]))).astype('float32') / 255
         dbSet_images += anchorImage-meanImage, pullerImage-meanImage, pusherImage-meanImage
+        print(input)
     dbSet_images = np.asarray(dbSet_images)
     for input in dbSet_images:
         check = np.isnan(input)
@@ -303,15 +309,17 @@ def main(unused_argv):
 
     # We will have triplets here of anchor coming from testSet and puller pusher coming from the dbSet
     # These are being used to get the features for the testSet
-    batchSize_testSet = 30
+    batchSize_testSet = 3
+    batchtype = "test"
     testSet_triplets = generateMinibatch(testSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck,
-                                       batchSize_testSet)
+                                       batchSize_testSet, batchtype)
     testSet_images = []
     for input in testSet_triplets:
-        anchorImage = np.array(cv2.imread(os.path.join(script_dir,input[0][0]))).astype('float32') / 255
-        pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[1][0]))).astype('float32') / 255
-        pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
+        anchorImage = np.array(cv2.imread(os.path.join(script_dir,input[1][0]))).astype('float32') / 255
+        pullerImage = np.array(cv2.imread(os.path.join(script_dir,input[2][0]))).astype('float32') / 255
+        pusherImage = np.array(cv2.imread(os.path.join(script_dir,input[3][0]))).astype('float32') / 255
         testSet_images += anchorImage-meanImage, pullerImage-meanImage, pusherImage-meanImage
+        print(input)
     testSet_images = np.asarray(testSet_images)
     for input in testSet_images:
         check = np.isnan(input)
@@ -327,7 +335,7 @@ def main(unused_argv):
     dbSet_results = estimator.predict(input_fn=dbSet_input_fn)
     dbSet_features = []
     for dbSet_result in dbSet_results:
-        # print(test_result['features'])
+        print(dbSet_result['features'])
         dbSet_features += [dbSet_result['features']]
 
     # Get the features for the testSet in testSet_features
@@ -335,11 +343,29 @@ def main(unused_argv):
     testSet_results = estimator.predict(input_fn=testSet_input_fn)
     testSet_features = []
     for testSet_result in testSet_results:
-        # print(test_result['features'])
+        print(testSet_result['features'])
         testSet_features += [testSet_result['features']]
 
     print('dbSet feature size: {}'.format(np.shape(dbSet_features)))
     print('testSet feature size: {}'.format(np.shape(testSet_features)))
+
+    # Create the array that contains useful data for the dbSet and the testSet
+    usefulData_dbSet = []
+    i = 0
+    for input in dbSet_triplets:
+        usefulData_dbSet += [input[0], input[1], dbSet_features[i]]  # [class, [array of filename and 4 quaternions], [array of 16 features]]
+        i = i + 3
+    usefulData_testSet = []
+    i = 0
+    for input in testSet_triplets:
+        usefulData_testSet += [input[0], input[1], testSet_features[i]] # [class, [array of filename and 4 quaternions], [array of 16 features]]
+        i = i + 3
+
+    for input in usefulData_dbSet:
+        print(input)
+    print("-------------------------------------------------------------------------------")
+    for input in usefulData_testSet:
+        print(input)
 
 if __name__ == "__main__":
     tf.app.run()
