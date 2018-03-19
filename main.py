@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import numpy as np
+from random import randint
 import cv2
 from data_utils import generateMinibatch
 import tensorflow as tf
@@ -11,6 +11,7 @@ import tensorflow as tf
 
 import numpy as np
 import tensorflow as tf
+
 
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
@@ -236,7 +237,7 @@ def main(unused_argv):
     meanImage = np.array(meanImage).astype('float32') / 255
 
     # Call to generate minibatch
-    batchSize = 100
+    batchSize = 7410
     batchtype = "train"
     input_triplets = generateMinibatch(trainSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck, batchSize, batchtype)
     # print('The input shape is : {}'.format(np.shape(input_triplets)))
@@ -277,9 +278,25 @@ def main(unused_argv):
     estimator = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir=model_dir)
 
     # Train the model
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_train}, batch_size=30, num_epochs=None, shuffle=False)
-    estimator.train(input_fn=train_input_fn, steps=100)
-    print('Reached Here')
+    for x in range(1000):
+        # print(x)
+        # inputs_now = []
+        indices = []
+        for p in range(10):
+            y = randint(0, 7410)*3
+            indices.append(y)
+            indices.append(y + 1)
+            indices.append(y + 2)
+        # print(indices)
+        inputs_now = [inputs_train[b] for b in indices]
+        # print(np.shape(inputs_now))
+        inputs_now = np.array(inputs_now)
+        # exit(0)
+        # inputs_now = inputs_train[x*30:(x*30)+30]
+        train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_now}, batch_size=30, num_epochs=None, shuffle=False)
+        estimator.train(input_fn=train_input_fn, steps=1)
+        print('Reached Here')
+    # exit(0)
 
     ############################################################
     ####################TRAINING ENDS###########################
@@ -288,7 +305,7 @@ def main(unused_argv):
 
     # We will have triplets here of anchor puller pusher all coming from the dbSet
     # These are being used to get the features for the dbSet
-    batchSize_dbSet = 3
+    batchSize_dbSet = 1335
     batchtype = "dbset"
     dbSet_triplets = generateMinibatch(dbSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck,
                                        batchSize_dbSet, batchtype)
@@ -309,7 +326,7 @@ def main(unused_argv):
 
     # We will have triplets here of anchor coming from testSet and puller pusher coming from the dbSet
     # These are being used to get the features for the testSet
-    batchSize_testSet = 3
+    batchSize_testSet = 3535
     batchtype = "test"
     testSet_triplets = generateMinibatch(testSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck,
                                        batchSize_testSet, batchtype)
