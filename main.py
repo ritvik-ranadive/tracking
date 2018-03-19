@@ -277,7 +277,7 @@ def main(unused_argv):
     estimator = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir=model_dir)
 
     # Train the model
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_train}, batch_size=30, num_epochs=None, shuffle=True)
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_train}, batch_size=30, num_epochs=None, shuffle=False)
     estimator.train(input_fn=train_input_fn, steps=100)
     print('Reached Here')
 
