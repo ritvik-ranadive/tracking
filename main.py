@@ -353,19 +353,39 @@ def main(unused_argv):
     usefulData_dbSet = []
     i = 0
     for input in dbSet_triplets:
-        usefulData_dbSet += [input[0], input[1], dbSet_features[i]]  # [class, [array of filename and 4 quaternions], [array of 16 features]]
+        usefulData_dbSet += [[input[0], input[1][1], input[1][2], input[1][3], input[1][4],
+                            dbSet_features[i][0], dbSet_features[i][1], dbSet_features[i][2], dbSet_features[i][3],
+                            dbSet_features[i][4], dbSet_features[i][5], dbSet_features[i][6], dbSet_features[i][7],
+                            dbSet_features[i][8], dbSet_features[i][9], dbSet_features[i][10], dbSet_features[i][11],
+                            dbSet_features[i][12], dbSet_features[i][13], dbSet_features[i][14], dbSet_features[i][15]]]
+                            # [class, 4 quaternions, 16 features]
         i = i + 3
     usefulData_testSet = []
     i = 0
     for input in testSet_triplets:
-        usefulData_testSet += [input[0], input[1], testSet_features[i]] # [class, [array of filename and 4 quaternions], [array of 16 features]]
+        usefulData_testSet += [[input[0], input[1][1], input[1][2], input[1][3], input[1][4],
+                            testSet_features[i][0], testSet_features[i][1], testSet_features[i][2], testSet_features[i][3],
+                            testSet_features[i][4], testSet_features[i][5], testSet_features[i][6], testSet_features[i][7],
+                            testSet_features[i][8], testSet_features[i][9], testSet_features[i][10], testSet_features[i][11],
+                            testSet_features[i][12], testSet_features[i][13], testSet_features[i][14], testSet_features[i][15]]]
+                            # [class, 4 quaternions, 16 features]
         i = i + 3
 
+    writeFile = open("dbSet_output_data.txt", 'w')
     for input in usefulData_dbSet:
-        print(input)
-    print("-------------------------------------------------------------------------------")
+        for entry in input:
+            writeFile.write(str(entry))
+            writeFile.write(';')
+        writeFile.write('\n')
+        # print(input)
+    # print("-------------------------------------------------------------------------------")
+    writeFile2 = open("testSet_output_data.txt", 'w')
     for input in usefulData_testSet:
-        print(input)
+        for entry in input:
+            writeFile2.write(str(entry))
+            writeFile2.write(';')
+        writeFile2.write('\n')
+        # print(input)
 
 if __name__ == "__main__":
     tf.app.run()
