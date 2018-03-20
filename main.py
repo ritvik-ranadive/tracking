@@ -6,6 +6,8 @@ import os
 from random import randint
 import cv2
 from data_utils import generateMinibatch
+import matplotlib.pyplot as plt
+import argparse
 import tensorflow as tf
 # from solver import model_fn
 
@@ -14,7 +16,9 @@ import tensorflow as tf
 
 
 tf.logging.set_verbosity(tf.logging.DEBUG)
-
+parser = argparse.ArgumentParser()
+parser.add_argument('--mode', choices=['train', 'test'], default='train')
+args = parser.parse_args()
 
 # Triplet Loss Calculation
 def calculate_loss(output):
@@ -404,5 +408,43 @@ def main(unused_argv):
         writeFile2.write('\n')
         # print(input)
 
+def test(testSet, dbSet, histName = 'foo'):
+
+    bf = cv2.BFMatcher()
+    matches = bf.match(testSet[:,5:-1].astype(np.float32), dbSet[:,5:-1].astype(np.float32))
+    good = 0
+    hist = {10:0, 20:0, 40:0, 120:0, 180:0 }
+
+    for m in matches:
+        A = testSet[m.queryIdx];
+        B = dbSet[m.trainIdx];
+        if((int)(A[0]) == (int)(B[0])):
+            good += 1
+            angularDist = np.arccos(np.abs(np.dot(A[1:5],B[1:5]))) * 360 / np.pi
+            if(angularDist <= 180):
+                hist[180] += 1
+            if (angularDist <= 180):
+                hist[120] += 1
+            if (angularDist <= 40):
+                hist[40] += 1
+            if (angularDist <= 20):
+                hist[20] += 1
+            if (angularDist <= 10):
+                hist[10] += 1
+
+    plt.bar(list(hist.keys()), list(hist.values()), width=10, color='g')
+    plt.savefig('hist/{}.png'.format(histName))
+
+    #return hist, good
+
+
+
 if __name__ == "__main__":
-    tf.app.run()
+    if(args.mode == 'train'):
+        tf.app.run()
+    else:
+        x = np.genfromtxt(fname='dbSet_output_data.txt', delimiter=";");
+        x = x[:, 0:21]
+        y = np.genfromtxt(fname='testSet_output_data.txt', delimiter=";");
+        y = y[:, 0:21]
+        test(y, x);
