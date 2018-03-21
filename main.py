@@ -61,7 +61,7 @@ def calculate_loss(output):
         # triplet_term2 = tf.Print(triplet_term2, [triplet_term2], "triplet_term2")
         # print('triplet_term2: {}'.format(np.shape(triplet_term2)))
 
-        triplet_term3 = tf.divide(triplet_term1, triplet_term2)                 #   (\\fxa - fx-\\22 / \\fxa - fx+\\22 + m)
+        triplet_term3 = tf.divide(triplet_term2, triplet_term1)                 #   (\\fxa - fx-\\22 / \\fxa - fx+\\22 + m)
         # triplet_term3 = tf.Print(triplet_term3, [triplet_term3], "triplet_term3")
         # print('triplet_term3: {}'.format(np.shape(triplet_term3)))
 
@@ -93,7 +93,7 @@ def cnn_model_fn(features, mode):
     # Triplet images are 64x64 pixels, and have 3 color channel and 3 such images are to be processed together
     input_layer = tf.reshape(features["x"], [-1, 64, 64, 3])
     # input_layer = tf.Print(input_layer, [input_layer], "input_layer")
-    print('Input Layer: {}'.format(np.shape(input_layer)))
+    # print('Input Layer: {}'.format(np.shape(input_layer)))
 
     # Convolutional Layer #1
     # Computes 16 features using a 8x8 filter with ReLU activation.
@@ -105,7 +105,7 @@ def cnn_model_fn(features, mode):
       filters=16,
       kernel_size=[8, 8],
       padding="valid",
-      activation=tf.nn.tanh,
+      activation=tf.nn.relu,
       data_format='channels_last')
     # print('Conv1: {}'.format(np.shape(conv1)))
     # conv1 = tf.Print(conv1, [conv1], "conv1")
@@ -128,7 +128,7 @@ def cnn_model_fn(features, mode):
       filters=7,
       kernel_size=[5, 5],
       padding="valid",
-      activation=tf.nn.tanh,
+      activation=tf.nn.relu,
       data_format='channels_last')
     # print('Conv2: {}'.format(np.shape(conv2)))
     # conv2 = tf.Print(conv2, [conv2], "conv2")
@@ -243,6 +243,7 @@ def main(unused_argv):
     # Call to generate minibatch
     batchSize = 7410
     batchtype = "train"
+    minibatchSize = 30
     input_triplets = generateMinibatch(trainSet, dbSet, dbSet_ape, dbSet_benchvise, dbSet_cam, dbSet_cat, dbSet_duck, batchSize, batchtype)
     # print('The input shape is : {}'.format(np.shape(input_triplets)))
     # for input in input_triplets:
@@ -286,8 +287,8 @@ def main(unused_argv):
         # print(x)
         # inputs_now = []
         indices = []
-        for p in range(10):
-            y = randint(0, 7410)*3
+        for p in range(minibatchSize):
+            y = randint(0, (batchSize-1))*3
             indices.append(y)
             indices.append(y + 1)
             indices.append(y + 2)
@@ -297,9 +298,9 @@ def main(unused_argv):
         inputs_now = np.array(inputs_now)
         # exit(0)
         # inputs_now = inputs_train[x*30:(x*30)+30]
-        train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_now}, batch_size=30, num_epochs=None, shuffle=False)
+        train_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x": inputs_now}, batch_size=minibatchSize*3, num_epochs=None, shuffle=False)
         estimator.train(input_fn=train_input_fn, steps=1)
-        print('Reached Here')
+        # print('Reached Here')
     # exit(0)
 
     ############################################################
@@ -408,23 +409,27 @@ def main(unused_argv):
         writeFile2.write('\n')
         # print(input)
 
-def test(testSet, dbSet, histName = 'foo'):
+def test(testSet, dbSet, histName = 'histogram'):
 
+    # fig, ax = plt.subplots()
+    # ind = np.arange(4)
     bf = cv2.BFMatcher()
     matches = bf.match(testSet[:,5:-1].astype(np.float32), dbSet[:,5:-1].astype(np.float32))
     good = 0
-    hist = {10:0, 20:0, 40:0, 120:0, 180:0 }
+    # hist = {10:0, 20:0, 40:0, 120:0, 180:0 }
+    hist = {10: 0, 20: 0, 40: 0, 180: 0}
 
     for m in matches:
         A = testSet[m.queryIdx];
         B = dbSet[m.trainIdx];
         if((int)(A[0]) == (int)(B[0])):
             good += 1
-            angularDist = np.arccos(np.abs(np.dot(A[1:5],B[1:5]))) * 360 / np.pi
+            # angularDist = np.arccos(np.abs(np.dot(A[1:5],B[1:5]))) * 360 / np.pi
+            angularDist = np.arccos(np.abs(np.dot(A[1:5], B[1:5]))) * 180 / np.pi
             if(angularDist <= 180):
                 hist[180] += 1
-            if (angularDist <= 180):
-                hist[120] += 1
+            # if (angularDist <= 180):
+            #     hist[120] += 1
             if (angularDist <= 40):
                 hist[40] += 1
             if (angularDist <= 20):
@@ -432,6 +437,9 @@ def test(testSet, dbSet, histName = 'foo'):
             if (angularDist <= 10):
                 hist[10] += 1
 
+    # ax.bar(list(hist.keys()), list(hist.values()), width=10, color='b')
+    # ax.set_xticks((10, 20, 40, 180))
+    # ax.set_xtickslabels(('<10','<20','<40','<180'))
     plt.bar(list(hist.keys()), list(hist.values()), width=10, color='g')
     plt.savefig('hist/{}.png'.format(histName))
 
