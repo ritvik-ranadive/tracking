@@ -8,7 +8,7 @@ import cv2
 from data_utils import generateMinibatch
 import matplotlib.pyplot as plt
 import argparse
-import tensorflow as tf
+import collections
 # from solver import model_fn
 
 import numpy as np
@@ -411,8 +411,8 @@ def main(unused_argv):
 
 def test(testSet, dbSet, histName = 'histogram'):
 
-    # fig, ax = plt.subplots()
-    # ind = np.arange(4)
+    fig, ax = plt.subplots()
+    ind = np.asarray([c for c in range(4)])
     bf = cv2.BFMatcher()
     matches = bf.match(testSet[:,5:-1].astype(np.float32), dbSet[:,5:-1].astype(np.float32))
     good = 0
@@ -437,10 +437,10 @@ def test(testSet, dbSet, histName = 'histogram'):
             if (angularDist <= 10):
                 hist[10] += 1
 
-    # ax.bar(list(hist.keys()), list(hist.values()), width=10, color='b')
-    # ax.set_xticks((10, 20, 40, 180))
-    # ax.set_xtickslabels(('<10','<20','<40','<180'))
-    plt.bar(list(hist.keys()), list(hist.values()), width=10, color='g')
+    od = collections.OrderedDict(sorted(hist.items()))
+    ax.bar(ind, list(od.values()), width=0.2, color='g')
+    ax.xaxis.set_ticks(ind)
+    ax.xaxis.set_ticklabels(('<10','<20','<40','<180'))
     plt.savefig('hist/{}.png'.format(histName))
 
     #return hist, good
